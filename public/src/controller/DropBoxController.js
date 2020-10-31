@@ -193,7 +193,7 @@ class DroBoxController {
                // console.log('responses', responses);
                 this.uploadComplete();// AULA 97
 
-            }).catch(err => {
+            }).catch(err => { 
 
                 this.uploadComplete();
                 console.error(err);
