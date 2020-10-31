@@ -60,40 +60,124 @@ class DroBoxController {
             let file = JSON.parse(li.dataset.file);
             let key = li.dataset.key;
 
-            //let formData = new FormData(); // AULA 109 Removendo o conteudo para realizar a exclusão do arquivo com o firebase Storage
 
-          //  formData.append('path', file.path);
-          //  formData.append('key', key);
+            promises.push(new Promise((resolve, reject) => {
 
+                if (file.type === 'folder') {
 
-      //      promises.push(this.ajax('/file', 'DELETE', formData));
-              promises.push(new Promise((resolve,reject)=>{
+                    this.removeFolderTask(this.currentFolder.join('/'), file.name).then(() => {
 
-                let fileRef =  firebase.storage().ref(this.currentFolder.join('/')).child(file.name);
-
-                fileRef.delete().then(()=>{
-
-                    resolve({
-                        fields:{
-                            key
-                        }
+                        resolve({
+                            fields: {
+                                key
+                            }
+                        });
 
 
-
-                    })
-
-                }).catch(err=>{
+                    });
 
 
-                    reject(err);
-                });
+                } else if (file.type) {
 
-              }));
+                    this.removeFile(this.currentFolder.join('/'), file.name).then(() => {
 
+
+                        resolve({
+                            fields: {
+                                key
+                            }
+                        });
+
+                    });
+
+
+                }
+
+
+
+            }));
 
         });
 
         return Promise.all(promises)   //AULA 104
+
+    }
+
+    removeFolderTask(ref, name) {
+
+        return new Promise((resolve, reject) => {
+
+            let folderRef = this.getFirebaseRef(ref + '/' + name);
+
+            folderRef.on('value', snapshot => {
+
+                folderRef.off('value');
+
+
+                snapshot.forEach(item => {
+
+                    let data = item.val();
+
+                    data.key = item.key;
+
+                    if (data.type === 'folder') {
+
+                        this.removeFolderTask(ref + '/' + name, data.name).then(() => {
+
+                            resolve({
+
+                                fiels: {
+                                    key: data.key
+                                }
+
+                            });
+
+
+                        }).catch(err => {
+
+                            reject(err);
+
+
+                        });
+
+
+                    } else if (data.type) {
+
+                        this.removeFile(ref + '/' + name, data.name).then(() => {
+
+                            resolve({
+
+                                fiels: {
+                                    key: data.key
+                                }
+
+                            });
+
+
+                        }).catch(err => {
+
+                            reject(err);
+
+
+                        });
+
+                    }
+
+                });
+
+                folderRef.remove();
+
+            });
+
+        })
+
+    }
+
+    removeFile(ref, name) {
+
+        let fileRef = firebase.storage().ref(ref).child(name);
+
+        return fileRef.delete();
 
     }
 
@@ -197,24 +281,24 @@ class DroBoxController {
             //  console.log(event.target.files); // verificar se é carregado, event . target alvo do evento que é o input, os files (arquivos selecionados)
             this.uploadTask(event.target.files).then(responses => {
 
-               responses.forEach(resp => { // Essas respostas lá do firebase - Coleções de documentos JSON e a Coleção é um array de documentos
+                responses.forEach(resp => { // Essas respostas lá do firebase - Coleções de documentos JSON e a Coleção é um array de documentos
 
-                  //   console.log(resp.files['input-file']); // resp.files['input-files']) Sempre vai ler dessa forma AULA 97
+                    //   console.log(resp.files['input-file']); // resp.files['input-files']) Sempre vai ler dessa forma AULA 97
 
-            //       this.getFirebaseRef().push().set(resp.files['input-file']); // Enviando os files para o firebase AULA 97
-                     this.getFirebaseRef().push().set({
+                    //       this.getFirebaseRef().push().set(resp.files['input-file']); // Enviando os files para o firebase AULA 97
+                    this.getFirebaseRef().push().set({
                         name: resp.name,
                         type: resp.contentType,
                         path: resp.downloadURLs[0],
                         size: resp.size
 
-                     });
-                 });
+                    });
+                });
 
-               // console.log('responses', responses);
+                // console.log('responses', responses);
                 this.uploadComplete();// AULA 97
 
-            }).catch(err => { 
+            }).catch(err => {
 
                 this.uploadComplete();
                 console.error(err);
@@ -308,13 +392,13 @@ class DroBoxController {
                 let task = fileRef.put(file); // Realizar o put e vai retornar o upload e será possível manipular os eventos do upload
 
                 task.on('state_changed', snapshot => {
-                  
+
                     this.uploadProgress({
 
-                        loaded:snapshot.bytesTransferred,
+                        loaded: snapshot.bytesTransferred,
                         total: snapshot.totalBytes
 
-                    },file);
+                    }, file);
                     //  console.log('progress', snapshot);
                 }, error => {
 
@@ -325,18 +409,18 @@ class DroBoxController {
 
                 }, () => {
 
-                    fileRef.getMetadata().then(metadata=>{
+                    fileRef.getMetadata().then(metadata => {
 
-                            resolve(metadata);
+                        resolve(metadata);
 
-                    }).catch(err=>{
+                    }).catch(err => {
 
                         reject(err);
 
                     });
 
-                 //   console.log('sucess', snapshot);
-                //    resolve();
+                    //   console.log('sucess', snapshot);
+                    //    resolve();
 
                 }); // Vai escutar os estados
 
