@@ -807,8 +807,8 @@ class DroBoxController {
 
 
                 default:
-                    window.open('/file?path=' + file.path);
-
+               //     window.open('/file?path=' + file.path);
+               window.open(file.path); // Abrir o arquivo no firebase storage AUAL 111 
 
 
 
