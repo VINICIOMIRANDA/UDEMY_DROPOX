@@ -176,13 +176,21 @@ class DroBoxController {
             //  console.log(event.target.files); // verificar se é carregado, event . target alvo do evento que é o input, os files (arquivos selecionados)
             this.uploadTask(event.target.files).then(responses => {
 
-                responses.forEach(resp => { // Essas respostas lá do firebase - Coleções de documentos JSON e a Coleção é um array de documentos
+               responses.forEach(resp => { // Essas respostas lá do firebase - Coleções de documentos JSON e a Coleção é um array de documentos
 
-                    //   console.log(resp.files['input-file']); // resp.files['input-files']) Sempre vai ler dessa forma AULA 97
+                  //   console.log(resp.files['input-file']); // resp.files['input-files']) Sempre vai ler dessa forma AULA 97
 
-                    this.getFirebaseRef().push().set(resp.files['input-file']); // Enviando os files para o firebase AULA 97
-                });
+            //       this.getFirebaseRef().push().set(resp.files['input-file']); // Enviando os files para o firebase AULA 97
+                     this.getFirebaseRef().push().set({
+                        name: resp.name,
+                        type: resp.contentType,
+                        path: resp.downloadURLs[0],
+                        size: resp.size
 
+                     });
+                 });
+
+               // console.log('responses', responses);
                 this.uploadComplete();// AULA 97
 
             }).catch(err => {
@@ -270,19 +278,46 @@ class DroBoxController {
 
         [...files].forEach(file => {
 
-            let formData = new FormData();  // Ler o arquivo
-
-            formData.append('input-file', file);
-
-            promises.push(this.ajax('/upload', 'POST', formData, () => {
-
-                this.uploadProgress(event, file);
-
-            }, () => {
-
-                this.startUploadTime = Date.now();
 
 
+            promises.push(new Promise((resolve, reject) => {
+
+                let fileRef = firebase.storage().ref(this.currentFolder.join("/")).child(file.name); //AULA 108 Refatorando com o Firebase
+
+                let task = fileRef.put(file); // Realizar o put e vai retornar o upload e será possível manipular os eventos do upload
+
+                task.on('state_changed', snapshot => {
+                  
+                    this.uploadProgress({
+
+                        loaded:snapshot.bytesTransferred,
+                        total: snapshot.totalBytes
+
+                    },file);
+                    //  console.log('progress', snapshot);
+                }, error => {
+
+                    console.error(error);
+                    reject(error);
+
+
+
+                }, () => {
+
+                    fileRef.getMetadata().then(metadata=>{
+
+                            resolve(metadata);
+
+                    }).catch(err=>{
+
+                        reject(err);
+
+                    });
+
+                 //   console.log('sucess', snapshot);
+                //    resolve();
+
+                }); // Vai escutar os estados
 
             }));
         });
@@ -577,7 +612,7 @@ class DroBoxController {
 
                 //  console.log(key, data);
 
-             
+
             })
 
         }) // on (escutando ) o evento e envia uma fotografia do estado, o snapshot vai utiliza a array function para tratar ele.
@@ -627,23 +662,23 @@ class DroBoxController {
                 </svg>
                     `;
             }
-           
+
             nav.appendChild(span);
 
         }
 
         this.navEl.innerHTML = nav.innerHTML;
 
-        this.navEl.querySelectorAll('a').forEach(a=>{
+        this.navEl.querySelectorAll('a').forEach(a => {
 
-            a.addEventListener('click', e=>{
+            a.addEventListener('click', e => {
 
                 e.preventDefault();
 
                 this.currentFolder = a.dataset.path.split('/');
 
                 this.openFolder();
-//AULA 106
+                //AULA 106
             });
         });
 
