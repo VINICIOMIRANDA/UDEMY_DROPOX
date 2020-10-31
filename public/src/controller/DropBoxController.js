@@ -60,14 +60,35 @@ class DroBoxController {
             let file = JSON.parse(li.dataset.file);
             let key = li.dataset.key;
 
-            let formData = new FormData();
+            //let formData = new FormData(); // AULA 109 Removendo o conteudo para realizar a exclusão do arquivo com o firebase Storage
 
-            formData.append('path', file.path);
-            formData.append('key', key);
+          //  formData.append('path', file.path);
+          //  formData.append('key', key);
 
 
-            promises.push(this.ajax('/file', 'DELETE', formData));
+      //      promises.push(this.ajax('/file', 'DELETE', formData));
+              promises.push(new Promise((resolve,reject)=>{
 
+                let fileRef =  firebase.storage().ref(this.currentFolder.join('/')).child(file.name);
+
+                fileRef.delete().then(()=>{
+
+                    resolve({
+                        fields:{
+                            key
+                        }
+
+
+
+                    })
+
+                }).catch(err=>{
+
+
+                    reject(err);
+                });
+
+              }));
 
 
         });
